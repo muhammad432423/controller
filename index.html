@@ -18,9 +18,8 @@
         .server-settings input { flex: 1; padding: 10px; border: none; border-radius: 5px; }
         .server-settings button { padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer; }
         
-        .voice-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 1.5rem; background: #4361ee; color: white; border: none; cursor: pointer; display: block; margin: 10px auto; transition: all 0.3s ease; }
+        .voice-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 1.5rem; background: #4361ee; color: white; border: none; cursor: pointer; display: block; margin: 10px auto; }
         .voice-btn.listening { background: #f72585; animation: pulse 1.5s infinite; }
-        .voice-btn.waiting { background: #ff9f1c; }
         
         @keyframes pulse { 
             0% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
@@ -35,14 +34,11 @@
         .info { background: #4cc9f0; }
         .success { background: #00b894; }
         .error { background: #f72585; }
-        .warning { background: #ff9f1c; }
         
         .response-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; min-height: 100px; margin: 10px 0; }
         
         .quick-commands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
         .quick-btn { padding: 10px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; cursor: pointer; }
-        
-        .instructions { font-size: 12px; color: #ccc; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -66,9 +62,8 @@
         <!-- Voice Control -->
         <div class="card">
             <h3>🎤 Voice Command</h3>
-            <button class="voice-btn" id="voiceButton" onclick="startVoiceWithFeedback()">🎤</button>
-            <div id="voiceStatus" class="status info">Tap microphone and speak clearly</div>
-            <div class="instructions">Click → Wait for red → Speak → It turns blue when done</div>
+            <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
+            <div id="voiceStatus" class="status info">Tap microphone to speak</div>
         </div>
 
         <!-- Text Control -->
@@ -102,83 +97,50 @@
         // Initialize
         function init() {
             // Check if browser supports speech recognition
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
                 recognition.continuous = false;
                 recognition.interimResults = false;
                 recognition.lang = 'en-US';
-                recognition.maxAlternatives = 1;
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
-                    document.getElementById('voiceButton').classList.remove('waiting');
-                    updateVoiceStatus('🎤 Listening... Speak now!');
-                    console.log('Voice recognition started');
+                    updateVoiceStatus('🎤 Listening... Speak now');
                 };
 
                 recognition.onresult = function(event) {
                     const text = event.results[0][0].transcript;
                     document.getElementById('textInput').value = text;
-                    updateVoiceStatus('✅ Heard: ' + text);
+                    updateVoiceStatus('✅ Voice captured!');
                     sendToServer(text);
-                    stopListening();
                 };
 
                 recognition.onerror = function(event) {
-                    console.log('Voice error:', event.error);
-                    if (event.error === 'no-speech') {
-                        updateVoiceStatus('❌ No speech detected. Click mic and try again.');
-                    } else if (event.error === 'audio-capture') {
-                        updateVoiceStatus('❌ No microphone found.');
-                    } else if (event.error === 'not-allowed') {
-                        updateVoiceStatus('❌ Microphone blocked. Allow permission.');
-                    } else {
-                        updateVoiceStatus('❌ Error: ' + event.error);
-                    }
+                    updateVoiceStatus('❌ Error: ' + event.error);
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    console.log('Voice recognition ended');
-                    if (isListening) {
-                        stopListening();
-                    }
+                    stopListening();
                 };
-
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
             }
         }
 
-        // Improved voice start with user feedback
-        function startVoiceWithFeedback() {
+        // Voice control
+        function toggleVoice() {
             if (isListening) {
                 stopListening();
-                return;
-            }
-
-            // Show waiting state
-            document.getElementById('voiceButton').classList.add('waiting');
-            updateVoiceStatus('🟡 Getting ready... Click allow if prompted');
-            
-            // Brief delay to show feedback
-            setTimeout(() => {
+            } else {
                 startListening();
-            }, 500);
+            }
         }
 
         function startListening() {
             if (recognition) {
-                try {
-                    recognition.start();
-                    console.log('Starting voice recognition');
-                } catch (error) {
-                    console.log('Start error:', error);
-                    updateVoiceStatus('❌ Failed to start. Click mic again.');
-                    stopListening();
-                }
+                recognition.start();
             } else {
                 updateVoiceStatus('❌ Voice recognition not available');
             }
@@ -186,33 +148,15 @@
 
         function stopListening() {
             isListening = false;
-            document.getElementById('voiceButton').classList.remove('listening', 'waiting');
-            updateVoiceStatus('Tap microphone and speak clearly');
+            document.getElementById('voiceButton').classList.remove('listening');
+            updateVoiceStatus('Tap microphone to speak');
             if (recognition) {
-                try {
-                    recognition.stop();
-                } catch (error) {
-                    console.log('Stop error:', error);
-                }
+                recognition.stop();
             }
         }
 
         function updateVoiceStatus(message) {
             document.getElementById('voiceStatus').textContent = message;
-            
-            // Update status color based on message
-            const statusEl = document.getElementById('voiceStatus');
-            statusEl.className = 'status ';
-            
-            if (message.includes('✅')) {
-                statusEl.classList.add('success');
-            } else if (message.includes('❌')) {
-                statusEl.classList.add('error');
-            } else if (message.includes('🟡')) {
-                statusEl.classList.add('warning');
-            } else {
-                statusEl.classList.add('info');
-            }
         }
 
         // Server communication
@@ -228,7 +172,7 @@
             statusEl.className = 'status info';
 
             try {
-                const response = await fetch(`${getServerUrl()}/health`);
+                const response = await fetch(`${getServerUrl()}/health`, { timeout: 5000 });
                 if (response.status === 200) {
                     statusEl.textContent = '✅ Connected to server!';
                     statusEl.className = 'status success';
