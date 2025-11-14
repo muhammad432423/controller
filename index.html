@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #1a1a2e; color: white; padding: 20px; min-height: 100vh; }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 20px; padding: 20px; background: #2d2d44; border-radius: 10px; }
+        h1 { color: #4cc9f0; margin-bottom: 10px; }
+        
+        .card { background: #2d2d44; padding: 20px; margin: 15px 0; border-radius: 10px; }
+        
+        .server-settings { display: flex; gap: 10px; margin-bottom: 15px; }
+        .server-settings input { flex: 1; padding: 10px; border: none; border-radius: 5px; }
+        .server-settings button { padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        
+        .voice-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 1.5rem; background: #4361ee; color: white; border: none; cursor: pointer; display: block; margin: 10px auto; }
+        .voice-btn.listening { background: #f72585; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(247, 37, 133, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
+        }
+        
+        .text-input { width: 100%; padding: 15px; border: none; border-radius: 8px; margin: 10px 0; font-size: 16px; }
+        .send-btn { width: 100%; padding: 15px; background: #00b894; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        
+        .status { padding: 10px; border-radius: 5px; text-align: center; margin: 10px 0; }
+        .info { background: #4cc9f0; }
+        .success { background: #00b894; }
+        .error { background: #f72585; }
+        
+        .response-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; min-height: 100px; margin: 10px 0; }
+        
+        .quick-commands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .quick-btn { padding: 10px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 AI Voice Assistant</h1>
+            <p>Control your computer with voice commands</p>
+        </header>
+
+        <!-- Server Settings -->
+        <div class="card">
+            <h3>🔧 Server Settings</h3>
+            <div class="server-settings">
+                <input type="text" id="serverIp" placeholder="192.168.100.11" value="192.168.100.11">
+                <input type="text" id="serverPort" placeholder="8080" value="8080">
+                <button onclick="testConnection()">Test</button>
+            </div>
+            <div id="connectionStatus" class="status info">Click Test to check connection</div>
+        </div>
+
+        <!-- Voice Control -->
+        <div class="card">
+            <h3>🎤 Voice Command</h3>
+            <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
+            <div id="voiceStatus" class="status info">Tap microphone to speak</div>
+        </div>
+
+        <!-- Text Control -->
+        <div class="card">
+            <h3>⌨️ Text Command</h3>
+            <input type="text" class="text-input" id="textInput" placeholder="Type command here...">
+            <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
+            
+            <div class="quick-commands">
+                <button class="quick-btn" onclick="sendQuickCommand('open notepad')">📝 Notepad</button>
+                <button class="quick-btn" onclick="sendQuickCommand('open calculator')">🧮 Calculator</button>
+                <button class="quick-btn" onclick="sendQuickCommand('what time is it')">🕒 Time</button>
+                <button class="quick-btn" onclick="sendQuickCommand('open chrome')">🌐 Chrome</button>
+            </div>
+        </div>
+
+        <!-- Response -->
+        <div class="card">
+            <h3>🤖 AI Response</h3>
+            <div id="response" class="response-box">
+                Response will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isListening = false;
+        let recognition = null;
+        let serverUrl = 'http://192.168.100.11:8080';
+
+        // Initialize
+        function init() {
+            // Check if browser supports speech recognition
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    document.getElementById('voiceButton').classList.add('listening');
+                    updateVoiceStatus('🎤 Listening... Speak now');
+                };
+
+                recognition.onresult = function(event) {
+                    const text = event.results[0][0].transcript;
+                    document.getElementById('textInput').value = text;
+                    updateVoiceStatus('✅ Voice captured!');
+                    sendToServer(text);
+                };
+
+                recognition.onerror = function(event) {
+                    updateVoiceStatus('❌ Error: ' + event.error);
+                    stopListening();
+                };
+
+                recognition.onend = function() {
+                    stopListening();
+                };
+            } else {
+                updateVoiceStatus('❌ Voice not supported in this browser');
+            }
+        }
+
+        // Voice control
+        function toggleVoice() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        function startListening() {
+            if (recognition) {
+                recognition.start();
+            } else {
+                updateVoiceStatus('❌ Voice recognition not available');
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            document.getElementById('voiceButton').classList.remove('listening');
+            updateVoiceStatus('Tap microphone to speak');
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
+        function updateVoiceStatus(message) {
+            document.getElementById('voiceStatus').textContent = message;
+        }
+
+        // Server communication
+        function getServerUrl() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            return `http://${ip}:${port}`;
+        }
+
+        async function testConnection() {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = 'Testing connection...';
+            statusEl.className = 'status info';
+
+            try {
+                const response = await fetch(`${getServerUrl()}/health`, { timeout: 5000 });
+                if (response.status === 200) {
+                    statusEl.textContent = '✅ Connected to server!';
+                    statusEl.className = 'status success';
+                    serverUrl = getServerUrl();
+                } else {
+                    statusEl.textContent = '❌ Server error';
+                    statusEl.className = 'status error';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Cannot connect to server';
+                statusEl.className = 'status error';
+            }
+        }
+
+        function sendTextCommand() {
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                sendToServer(text);
+                document.getElementById('textInput').value = '';
+            }
+        }
+
+        function sendQuickCommand(command) {
+            document.getElementById('textInput').value = command;
+            sendToServer(command);
+        }
+
+        async function sendToServer(text) {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Sending to server...';
+
+            try {
+                const response = await fetch(`${serverUrl}/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    responseEl.textContent = data.response_text;
+                } else {
+                    responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                responseEl.textContent = 'Connection failed: ' + error.message;
+            }
+        }
+
+        // Enter key support
+        document.getElementById('textInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendTextCommand();
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
