@@ -97,33 +97,57 @@
         // Initialize
         function init() {
             // Check if browser supports speech recognition
-            if ('webkitSpeechRecognition' in window) {
-                recognition = new webkitSpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;  // CHANGED: Keep listening
+                recognition.interimResults = true;  // CHANGED: Get partial results
                 recognition.lang = 'en-US';
+                recognition.maxAlternatives = 1;
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
                     updateVoiceStatus('🎤 Listening... Speak now');
+                    console.log('Voice recognition started');
                 };
 
                 recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    document.getElementById('textInput').value = text;
-                    updateVoiceStatus('✅ Voice captured!');
-                    sendToServer(text);
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        }
+                    }
+                    
+                    if (finalTranscript) {
+                        document.getElementById('textInput').value = finalTranscript;
+                        updateVoiceStatus('✅ Voice captured!');
+                        sendToServer(finalTranscript);
+                        // Don't stop listening - keep it running
+                    }
                 };
 
                 recognition.onerror = function(event) {
+                    console.log('Voice error:', event.error);
                     updateVoiceStatus('❌ Error: ' + event.error);
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    stopListening();
+                    console.log('Voice recognition ended');
+                    // Auto-restart if it wasn't manually stopped
+                    if (isListening) {
+                        setTimeout(() => {
+                            if (isListening && recognition) {
+                                recognition.start();
+                                console.log('Auto-restarting voice recognition');
+                            }
+                        }, 100);
+                    }
                 };
+
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
             }
@@ -140,7 +164,13 @@
 
         function startListening() {
             if (recognition) {
-                recognition.start();
+                try {
+                    recognition.start();
+                    console.log('Starting voice recognition');
+                } catch (error) {
+                    console.log('Start error:', error);
+                    updateVoiceStatus('❌ Failed to start listening');
+                }
             } else {
                 updateVoiceStatus('❌ Voice recognition not available');
             }
@@ -151,7 +181,11 @@
             document.getElementById('voiceButton').classList.remove('listening');
             updateVoiceStatus('Tap microphone to speak');
             if (recognition) {
-                recognition.stop();
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    console.log('Stop error:', error);
+                }
             }
         }
 
@@ -172,7 +206,7 @@
             statusEl.className = 'status info';
 
             try {
-                const response = await fetch(`${getServerUrl()}/health`, { timeout: 5000 });
+                const response = await fetch(`${getServerUrl()}/health`);
                 if (response.status === 200) {
                     statusEl.textContent = '✅ Connected to server!';
                     statusEl.className = 'status success';
