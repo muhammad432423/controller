@@ -24,7 +24,6 @@
             margin: 0 auto; 
         }
         
-        /* Header */
         .header {
             text-align: center;
             margin-bottom: 30px;
@@ -67,7 +66,6 @@
             font-size: 0.9rem;
         }
         
-        /* Navigation */
         .nav {
             display: flex;
             background: rgba(255, 255, 255, 0.1);
@@ -95,7 +93,6 @@
             box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
         }
         
-        /* Content Sections */
         .content-section {
             display: none;
             animation: fadeIn 0.5s ease;
@@ -110,7 +107,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Cards */
         .card {
             background: rgba(255, 255, 255, 0.1);
             padding: 25px;
@@ -120,7 +116,6 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        /* Voice Section */
         .voice-btn {
             width: 120px;
             height: 120px;
@@ -153,7 +148,6 @@
             100% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
         }
         
-        /* Text Input */
         .text-input {
             width: 100%;
             padding: 18px 20px;
@@ -195,7 +189,6 @@
             box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
         }
         
-        /* Status Messages */
         .status {
             padding: 15px;
             border-radius: 12px;
@@ -222,7 +215,6 @@
             border: 1px solid rgba(247, 37, 133, 0.3);
         }
         
-        /* Response Section */
         .response-header {
             display: flex;
             align-items: center;
@@ -270,7 +262,6 @@
             white-space: pre-wrap;
         }
         
-        /* Settings */
         .settings-toggle {
             position: fixed;
             top: 20px;
@@ -353,7 +344,6 @@
             background: #3a56d4;
         }
         
-        /* Overlay */
         .overlay {
             display: none;
             position: fixed;
@@ -381,61 +371,127 @@
         .example-item:hover {
             background: rgba(255, 255, 255, 0.15);
         }
+        
+        .connection-type {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .conn-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .conn-btn.active {
+            background: #4361ee;
+            border-color: #4361ee;
+        }
+        
+        .troubleshoot-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(247, 37, 133, 0.2);
+            border: 1px solid rgba(247, 37, 133, 0.3);
+            border-radius: 8px;
+            color: #f72585;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .troubleshoot-btn:hover {
+            background: rgba(247, 37, 133, 0.3);
+        }
     </style>
 </head>
 <body>
-    <!-- Settings Toggle -->
     <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
     
-    <!-- Overlay -->
     <div class="overlay" id="overlay" onclick="toggleSettings()"></div>
     
-    <!-- Settings Panel -->
     <div class="settings-panel" id="settingsPanel">
         <div class="settings-header">
-            <h3>Settings</h3>
+            <h3>Server Settings</h3>
             <button class="close-settings" onclick="toggleSettings()">✕</button>
         </div>
         
         <div class="card">
-            <h4>Server Configuration</h4>
-            <input type="text" class="server-input" id="serverIp" placeholder="IP Address" value="192.168.100.11">
-            <input type="text" class="server-input" id="serverPort" placeholder="Port" value="8080">
+            <h4>Connection Type</h4>
+            <div class="connection-type">
+                <button class="conn-btn active" onclick="setConnectionType('local')">Local Network</button>
+                <button class="conn-btn" onclick="setConnectionType('ngrok')">Ngrok Tunnel</button>
+            </div>
+            
+            <div id="localConfig">
+                <input type="text" class="server-input" id="serverIp" placeholder="IP Address" value="192.168.100.11">
+                <input type="text" class="server-input" id="serverPort" placeholder="Port" value="8080">
+            </div>
+            
+            <div id="ngrokConfig" style="display: none;">
+                <input type="text" class="server-input" id="ngrokUrl" placeholder="Ngrok URL (e.g., abc123.ngrok.io)">
+                <small style="color: #8892b0; display: block; margin: 10px 0;">
+                    Get this from: <code>ngrok http 8080</code>
+                </small>
+            </div>
+            
             <button class="test-btn" onclick="testConnection()">Test Connection</button>
             <div id="connectionStatus" class="status info">Click Test to check connection</div>
+            
+            <button class="troubleshoot-btn" onclick="runTroubleshooter()">🛠️ Auto Troubleshoot</button>
+            <div id="troubleshootResult" class="status" style="display: none;"></div>
         </div>
         
         <div class="card">
-            <h4>Voice Examples</h4>
+            <h4>Quick Commands</h4>
             <div class="example-item" onclick="useExample('Open notepad')">"Open notepad"</div>
             <div class="example-item" onclick="useExample('What time is it')">"What time is it"</div>
             <div class="example-item" onclick="useExample('Play music on youtube')">"Play music on YouTube"</div>
-            <div class="example-item" onclick="useExample('Shutdown computer')">"Shutdown computer"</div>
+            <div class="example-item" onclick="useExample('Hello')">"Hello"</div>
+        </div>
+
+        <div class="card">
+            <h4>Mobile Connection Help</h4>
+            <div style="font-size: 0.9rem; color: #8892b0;">
+                <p><strong>If one mobile can't connect:</strong></p>
+                <ol>
+                    <li><strong>Disable mobile data</strong> on the problematic phone</li>
+                    <li>Ensure both devices on <strong>same WiFi</strong></li>
+                    <li>Try <strong>different browser</strong> (Chrome, Firefox)</li>
+                    <li>Clear browser cache and restart</li>
+                    <li>Use <strong>Ngrok tunnel</strong> for reliable connection</li>
+                </ol>
+            </div>
         </div>
     </div>
 
     <div class="container">
-        <!-- Header with Logo -->
         <div class="header">
             <div class="logo-container">
                 <img src="image.png" alt="Duora Logo" class="logo-img" onerror="this.style.display='none'">
                 <div class="logo-text">Duora</div>
             </div>
             <h1 class="title">AI Assistant</h1>
-            <p class="subtitle">Your intelligent voice assistant</p>
+            <p class="subtitle">Connect to your AI Server</p>
         </div>
 
-        <!-- Navigation -->
         <div class="nav">
             <button class="nav-btn active" onclick="showSection('voice')">🎤 Voice</button>
             <button class="nav-btn" onclick="showSection('text')">⌨️ Text</button>
+            <button class="nav-btn" onclick="showSection('quick')">⚡ Quick</button>
         </div>
 
         <!-- Voice Section -->
         <div id="voiceSection" class="content-section active">
             <div class="card">
                 <h3>Voice Command</h3>
-                <p class="subtitle">Click the microphone to start/stop listening</p>
+                <p class="subtitle">Speak to control your computer</p>
                 
                 <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
                 <div id="voiceStatus" class="status info">Ready to listen</div>
@@ -447,24 +503,46 @@
         <div id="textSection" class="content-section">
             <div class="card">
                 <h3>Text Command</h3>
-                <p class="subtitle">Type your command below</p>
+                <p class="subtitle">Type commands for your AI server</p>
                 
                 <input type="text" class="text-input" id="textInput" placeholder="Type your command here...">
-                <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
+                <button class="send-btn" onclick="sendTextCommand()">Send to Server</button>
             </div>
         </div>
 
-        <!-- Response Section -->
+        <!-- Quick Commands Section -->
+        <div id="quickSection" class="content-section">
+            <div class="card">
+                <h3>Quick Commands</h3>
+                <p class="subtitle">Tap any command below</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="example-item" onclick="useExample('Open notepad')">📝 Open Notepad</button>
+                    <button class="example-item" onclick="useExample('What time is it')">🕒 What time?</button>
+                    <button class="example-item" onclick="useExample('Play music')">🎵 Play Music</button>
+                    <button class="example-item" onclick="useExample('Hello')">👋 Hello</button>
+                    <button class="example-item" onclick="useExample('Shutdown')">⏻ Shutdown</button>
+                    <button class="example-item" onclick="useExample('Calculator')">🧮 Calculator</button>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
-            <div class="response-header collapsed" id="responseHeader" onclick="toggleResponse()">
+            <div class="response-header" id="responseHeader" onclick="toggleResponse()">
                 <div class="response-title">
-                    🤖 AI Response
+                    🤖 Server Response
                 </div>
                 <span class="toggle-icon">▼</span>
             </div>
-            <div class="response-content collapsed" id="responseContent">
+            <div class="response-content" id="responseContent">
                 <div id="response" class="response-box">
-                    Welcome to Duora AI! Choose voice or text to get started.
+                    Welcome to Duora AI! 
+                    
+For mobile connection issues:
+1. Check settings and test connection
+2. Use Ngrok tunnel for reliable access
+3. Ensure mobile data is disabled
+4. Both devices must be on same WiFi
                 </div>
             </div>
         </div>
@@ -474,15 +552,14 @@
         let isListening = false;
         let recognition = null;
         let serverUrl = 'http://192.168.100.11:8080';
-        let isResponseCollapsed = true; // Start collapsed
+        let connectionType = 'local';
+        let isResponseCollapsed = false;
 
         // Navigation
         function showSection(section) {
-            // Update navigation buttons
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
-            // Show selected section
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
             document.getElementById(section + 'Section').classList.add('active');
         }
@@ -511,62 +588,121 @@
             overlay.classList.toggle('active');
         }
 
+        function setConnectionType(type) {
+            connectionType = type;
+            document.querySelectorAll('.conn-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('localConfig').style.display = type === 'local' ? 'block' : 'none';
+            document.getElementById('ngrokConfig').style.display = type === 'ngrok' ? 'block' : 'none';
+            
+            updateServerUrl();
+        }
+
+        function updateServerUrl() {
+            if (connectionType === 'local') {
+                const ip = document.getElementById('serverIp').value;
+                const port = document.getElementById('serverPort').value;
+                serverUrl = `http://${ip}:${port}`;
+            } else {
+                const ngrokUrl = document.getElementById('ngrokUrl').value;
+                serverUrl = `https://${ngrokUrl}`;
+            }
+        }
+
+        // Auto Troubleshooter
+        async function runTroubleshooter() {
+            const resultEl = document.getElementById('troubleshootResult');
+            resultEl.style.display = 'block';
+            resultEl.className = 'status info';
+            resultEl.textContent = '🔍 Running diagnostics...';
+            
+            const tests = [
+                { name: 'Network Connectivity', test: testNetwork },
+                { name: 'Server Reachability', test: testServerReachability },
+                { name: 'CORS Support', test: testCORS }
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                resultEl.textContent = `🔍 Testing ${test.name}...`;
+                const result = await test.test();
+                results.push(`${result.success ? '✅' : '❌'} ${test.name}: ${result.message}`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            resultEl.className = 'status ' + (results.every(r => r.includes('✅')) ? 'success' : 'error');
+            resultEl.innerHTML = '<strong>Troubleshooting Results:</strong><br>' + results.join('<br>');
+        }
+
+        async function testNetwork() {
+            try {
+                // Test if we can make any network request
+                await fetch('https://httpbin.org/get', { mode: 'no-cors' });
+                return { success: true, message: 'Network is working' };
+            } catch (e) {
+                return { success: false, message: 'No internet connection' };
+            }
+        }
+
+        async function testServerReachability() {
+            try {
+                const response = await fetch(`${serverUrl}/health`, { 
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                if (response.ok) {
+                    return { success: true, message: 'Server is reachable' };
+                } else {
+                    return { success: false, message: `Server error: ${response.status}` };
+                }
+            } catch (e) {
+                return { success: false, message: `Cannot reach server: ${e.message}` };
+            }
+        }
+
+        async function testCORS() {
+            try {
+                const response = await fetch(`${serverUrl}/health`, { 
+                    method: 'OPTIONS',
+                    mode: 'cors'
+                });
+                return { success: true, message: 'CORS is configured' };
+            } catch (e) {
+                return { success: false, message: 'CORS may be blocking requests' };
+            }
+        }
+
         // Voice Recognition
-        function init() {
+        function initVoice() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true; // Keep listening continuously
-                recognition.interimResults = true; // Get interim results
+                recognition.continuous = false;
+                recognition.interimResults = false;
                 recognition.lang = 'en-US';
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
-                    updateVoiceStatus('🎤 Listening continuously... Speak now');
-                    document.getElementById('transcript').style.display = 'block';
+                    updateVoiceStatus('🎤 Listening... Speak now');
                 };
 
                 recognition.onresult = function(event) {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript;
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    // Update transcript display
-                    document.getElementById('transcript').textContent = 
-                        'Heard: ' + (finalTranscript || interimTranscript);
-                    
-                    // Process final results
-                    if (finalTranscript) {
-                        updateVoiceStatus('✅ Processing command...');
-                        sendToServer(finalTranscript);
-                    }
+                    const text = event.results[0][0].transcript;
+                    updateVoiceStatus('✅ Voice captured!');
+                    sendToServer(text);
                 };
 
                 recognition.onerror = function(event) {
                     updateVoiceStatus('❌ Error: ' + event.error);
-                    if (event.error === 'no-speech') {
-                        // Don't stop on no-speech errors in continuous mode
-                        return;
-                    }
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    // Auto-restart if we're still supposed to be listening
-                    if (isListening) {
-                        recognition.start();
-                    } else {
-                        stopListening();
-                    }
+                    stopListening();
                 };
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
@@ -585,18 +721,15 @@
             if (recognition) {
                 recognition.start();
             } else {
-                updateVoiceStatus('❌ Voice recognition not available');
+                initVoice();
+                recognition.start();
             }
         }
 
         function stopListening() {
             isListening = false;
             document.getElementById('voiceButton').classList.remove('listening');
-            updateVoiceStatus('Click microphone to start listening');
-            document.getElementById('transcript').style.display = 'none';
-            if (recognition) {
-                recognition.stop();
-            }
+            updateVoiceStatus('Click microphone to speak');
         }
 
         function updateVoiceStatus(message) {
@@ -605,9 +738,8 @@
 
         // Server Communication
         function getServerUrl() {
-            const ip = document.getElementById('serverIp').value;
-            const port = document.getElementById('serverPort').value;
-            return `http://${ip}:${port}`;
+            updateServerUrl();
+            return serverUrl;
         }
 
         async function testConnection() {
@@ -616,18 +748,28 @@
             statusEl.className = 'status info';
 
             try {
-                const response = await fetch(`${getServerUrl()}/health`);
+                const response = await fetch(`${getServerUrl()}/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                
                 if (response.ok) {
+                    const data = await response.json();
                     statusEl.textContent = '✅ Connected to server!';
                     statusEl.className = 'status success';
                     serverUrl = getServerUrl();
                 } else {
-                    statusEl.textContent = '❌ Server error';
+                    statusEl.textContent = '❌ Server error: ' + response.status;
                     statusEl.className = 'status error';
                 }
             } catch (error) {
                 statusEl.textContent = '❌ Cannot connect to server';
                 statusEl.className = 'status error';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    statusEl.innerHTML += '<br><small>Possible causes:<br>- Mobile data enabled<br>- Different WiFi network<br>- Firewall blocking</small>';
+                }
             }
         }
 
@@ -646,9 +788,8 @@
 
         async function sendToServer(text) {
             const responseEl = document.getElementById('response');
-            responseEl.textContent = 'Processing your request...';
+            responseEl.textContent = 'Sending to server...';
 
-            // Ensure response section is expanded when processing
             if (isResponseCollapsed) {
                 toggleResponse();
             }
@@ -659,18 +800,29 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    mode: 'cors',
                     body: JSON.stringify({ text: text })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
 
                 const data = await response.json();
                 
                 if (data.success) {
                     responseEl.textContent = data.response_text;
                 } else {
-                    responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    responseEl.textContent = 'Server error: ' + (data.error || 'Unknown error');
                 }
             } catch (error) {
-                responseEl.textContent = 'Connection failed. Please check server settings.';
+                console.error('Request failed:', error);
+                
+                if (error.message.includes('Failed to fetch')) {
+                    responseEl.textContent = `❌ Connection failed!\n\nTroubleshooting:\n1. Check server settings\n2. Run Auto Troubleshoot\n3. Use Ngrok tunnel\n4. Disable mobile data\n5. Ensure same WiFi network`;
+                } else {
+                    responseEl.textContent = '❌ Error: ' + error.message;
+                }
             }
         }
 
@@ -682,7 +834,11 @@
         });
 
         // Initialize on load
-        window.addEventListener('load', init);
+        window.addEventListener('load', function() {
+            initVoice();
+            console.log("🚀 Duora AI Interface Ready");
+            console.log("📡 Server URL:", serverUrl);
+        });
     </script>
 </body>
 </html>
