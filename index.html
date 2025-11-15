@@ -270,6 +270,105 @@
             white-space: pre-wrap;
         }
         
+        /* Settings */
+        .settings-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .settings-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 350px;
+            height: 100vh;
+            background: #1a1a2e;
+            padding: 30px;
+            transition: right 0.3s ease;
+            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .settings-panel.active {
+            right: 0;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .close-settings {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .server-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            margin: 10px 0;
+        }
+        
+        .test-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            background: #3a56d4;
+        }
+        
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
         .example-item {
             padding: 10px;
             margin: 8px 0;
@@ -282,31 +381,39 @@
         .example-item:hover {
             background: rgba(255, 255, 255, 0.15);
         }
-        
-        .command-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .command-btn {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .command-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body>
+    <!-- Settings Toggle -->
+    <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
+    
+    <!-- Overlay -->
+    <div class="overlay" id="overlay" onclick="toggleSettings()"></div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>Settings</h3>
+            <button class="close-settings" onclick="toggleSettings()">✕</button>
+        </div>
+        
+        <div class="card">
+            <h4>Server Configuration</h4>
+            <input type="text" class="server-input" id="serverIp" placeholder="IP Address" value="192.168.100.11">
+            <input type="text" class="server-input" id="serverPort" placeholder="Port" value="8080">
+            <button class="test-btn" onclick="testConnection()">Test Connection</button>
+            <div id="connectionStatus" class="status info">Click Test to check connection</div>
+        </div>
+        
+        <div class="card">
+            <h4>Voice Examples</h4>
+            <div class="example-item" onclick="useExample('Open notepad')">"Open notepad"</div>
+            <div class="example-item" onclick="useExample('What time is it')">"What time is it"</div>
+            <div class="example-item" onclick="useExample('Play music on youtube')">"Play music on YouTube"</div>
+            <div class="example-item" onclick="useExample('Shutdown computer')">"Shutdown computer"</div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header with Logo -->
         <div class="header">
@@ -315,21 +422,20 @@
                 <div class="logo-text">Duora</div>
             </div>
             <h1 class="title">AI Assistant</h1>
-            <p class="subtitle">100% Client-Side • Works Everywhere</p>
+            <p class="subtitle">Your intelligent voice assistant</p>
         </div>
 
         <!-- Navigation -->
         <div class="nav">
             <button class="nav-btn active" onclick="showSection('voice')">🎤 Voice</button>
             <button class="nav-btn" onclick="showSection('text')">⌨️ Text</button>
-            <button class="nav-btn" onclick="showSection('quick')">⚡ Quick</button>
         </div>
 
         <!-- Voice Section -->
         <div id="voiceSection" class="content-section active">
             <div class="card">
                 <h3>Voice Command</h3>
-                <p class="subtitle">Click the microphone and speak</p>
+                <p class="subtitle">Click the microphone to start/stop listening</p>
                 
                 <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
                 <div id="voiceStatus" class="status info">Ready to listen</div>
@@ -344,49 +450,21 @@
                 <p class="subtitle">Type your command below</p>
                 
                 <input type="text" class="text-input" id="textInput" placeholder="Type your command here...">
-                <button class="send-btn" onclick="processCommand()">Send Command</button>
-            </div>
-        </div>
-
-        <!-- Quick Commands Section -->
-        <div id="quickSection" class="content-section">
-            <div class="card">
-                <h3>Quick Commands</h3>
-                <p class="subtitle">Tap any command below</p>
-                
-                <div class="command-list">
-                    <button class="command-btn" onclick="quickCommand('time')">🕒 What time is it?</button>
-                    <button class="command-btn" onclick="quickCommand('date')">📅 What date is it?</button>
-                    <button class="command-btn" onclick="quickCommand('weather')">🌤️ Weather info</button>
-                    <button class="command-btn" onclick="quickCommand('joke')">😂 Tell me a joke</button>
-                    <button class="command-btn" onclick="quickCommand('quote')">💭 Random quote</button>
-                    <button class="command-btn" onclick="quickCommand('calc')">🧮 Calculator</button>
-                    <button class="command-btn" onclick="quickCommand('battery')">🔋 Battery status</button>
-                    <button class="command-btn" onclick="quickCommand('location')">📍 My location</button>
-                </div>
+                <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
             </div>
         </div>
 
         <!-- Response Section -->
         <div class="card">
-            <div class="response-header" id="responseHeader" onclick="toggleResponse()">
+            <div class="response-header collapsed" id="responseHeader" onclick="toggleResponse()">
                 <div class="response-title">
                     🤖 AI Response
                 </div>
                 <span class="toggle-icon">▼</span>
             </div>
-            <div class="response-content" id="responseContent">
+            <div class="response-content collapsed" id="responseContent">
                 <div id="response" class="response-box">
-                    Welcome to Duora AI! This is a 100% client-side assistant that works anywhere with HTTPS.
-                    
-Available Commands:
-• Ask for time/date
-• Get weather information  
-• Request jokes/quotes
-• Use calculator
-• Check battery status
-• Get location info
-• And much more!
+                    Welcome to Duora AI! Choose voice or text to get started.
                 </div>
             </div>
         </div>
@@ -395,44 +473,16 @@ Available Commands:
     <script>
         let isListening = false;
         let recognition = null;
-        let isResponseCollapsed = false;
-
-        // AI Knowledge Base
-        const aiKnowledge = {
-            greetings: ['Hello!', 'Hi there!', 'Hey!', 'Greetings!', 'Salam!'],
-            farewells: ['Goodbye!', 'See you!', 'Farewell!', 'Khuda Hafiz!'],
-            jokes: [
-                "Why don't scientists trust atoms? Because they make up everything!",
-                "Why did the scarecrow win an award? He was outstanding in his field!",
-                "Why don't eggs tell jokes? They'd crack each other up!",
-                "What do you call a fake noodle? An impasta!",
-                "Why did the math book look so sad? Because it had too many problems!"
-            ],
-            quotes: [
-                "The only way to do great work is to love what you do. - Steve Jobs",
-                "Innovation distinguishes between a leader and a follower. - Steve Jobs",
-                "Stay hungry, stay foolish. - Steve Jobs",
-                "Your time is limited, don't waste it living someone else's life. - Steve Jobs",
-                "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt"
-            ],
-            capabilities: [
-                "🎯 I can tell you the current time and date",
-                "🌤️ I can show weather information (if location allowed)",
-                "😂 I can tell you jokes to brighten your day", 
-                "💭 I can share inspirational quotes",
-                "🧮 I can perform basic calculations",
-                "🔋 I can check your device battery status",
-                "📍 I can show your current location",
-                "🔊 I can understand voice commands",
-                "📱 I work 100% in your browser - no server needed!"
-            ]
-        };
+        let serverUrl = 'http://192.168.100.11:8080';
+        let isResponseCollapsed = true; // Start collapsed
 
         // Navigation
         function showSection(section) {
+            // Update navigation buttons
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
+            // Show selected section
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
             document.getElementById(section + 'Section').classList.add('active');
         }
@@ -453,34 +503,70 @@ Available Commands:
             }
         }
 
+        // Settings
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('overlay');
+            panel.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
         // Voice Recognition
-        function initVoice() {
+        function init() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
+                recognition.continuous = true; // Keep listening continuously
+                recognition.interimResults = true; // Get interim results
                 recognition.lang = 'en-US';
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
-                    updateVoiceStatus('🎤 Listening... Speak now');
+                    updateVoiceStatus('🎤 Listening continuously... Speak now');
+                    document.getElementById('transcript').style.display = 'block';
                 };
 
                 recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    updateVoiceStatus('✅ Voice captured!');
-                    processCommand(text);
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    // Update transcript display
+                    document.getElementById('transcript').textContent = 
+                        'Heard: ' + (finalTranscript || interimTranscript);
+                    
+                    // Process final results
+                    if (finalTranscript) {
+                        updateVoiceStatus('✅ Processing command...');
+                        sendToServer(finalTranscript);
+                    }
                 };
 
                 recognition.onerror = function(event) {
                     updateVoiceStatus('❌ Error: ' + event.error);
+                    if (event.error === 'no-speech') {
+                        // Don't stop on no-speech errors in continuous mode
+                        return;
+                    }
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    stopListening();
+                    // Auto-restart if we're still supposed to be listening
+                    if (isListening) {
+                        recognition.start();
+                    } else {
+                        stopListening();
+                    }
                 };
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
@@ -499,243 +585,104 @@ Available Commands:
             if (recognition) {
                 recognition.start();
             } else {
-                initVoice();
-                recognition.start();
+                updateVoiceStatus('❌ Voice recognition not available');
             }
         }
 
         function stopListening() {
             isListening = false;
             document.getElementById('voiceButton').classList.remove('listening');
-            updateVoiceStatus('Click microphone to speak');
+            updateVoiceStatus('Click microphone to start listening');
+            document.getElementById('transcript').style.display = 'none';
+            if (recognition) {
+                recognition.stop();
+            }
         }
 
         function updateVoiceStatus(message) {
             document.getElementById('voiceStatus').textContent = message;
         }
 
-        // Command Processing
-        function processCommand(text = null) {
-            const inputText = text || document.getElementById('textInput').value.trim();
-            const responseEl = document.getElementById('response');
-            
-            if (!inputText) {
-                responseEl.textContent = "Please enter a command or use voice.";
-                return;
-            }
-
-            // Clear input if from text field
-            if (!text) {
-                document.getElementById('textInput').value = '';
-            }
-
-            responseEl.textContent = 'Processing...';
-            
-            if (!isResponseCollapsed) {
-                toggleResponse();
-            }
-
-            // Simulate processing delay
-            setTimeout(() => {
-                const response = understandCommand(inputText);
-                responseEl.textContent = response;
-            }, 500);
+        // Server Communication
+        function getServerUrl() {
+            const ip = document.getElementById('serverIp').value;
+            const port = document.getElementById('serverPort').value;
+            return `http://${ip}:${port}`;
         }
 
-        function quickCommand(command) {
-            const responses = {
-                'time': getCurrentTime(),
-                'date': getCurrentDate(),
-                'weather': getWeatherInfo(),
-                'joke': getRandomJoke(),
-                'quote': getRandomQuote(),
-                'calc': "🧮 Calculator ready! Try: '2+2', '10*5', '50/2'",
-                'battery': getBatteryStatus(),
-                'location': getLocationInfo()
-            };
-            
-            document.getElementById('response').textContent = responses[command] || "Command not recognized.";
-            
-            if (isResponseCollapsed) {
-                toggleResponse();
+        async function testConnection() {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = 'Testing connection...';
+            statusEl.className = 'status info';
+
+            try {
+                const response = await fetch(`${getServerUrl()}/health`);
+                if (response.ok) {
+                    statusEl.textContent = '✅ Connected to server!';
+                    statusEl.className = 'status success';
+                    serverUrl = getServerUrl();
+                } else {
+                    statusEl.textContent = '❌ Server error';
+                    statusEl.className = 'status error';
+                }
+            } catch (error) {
+                statusEl.textContent = '❌ Cannot connect to server';
+                statusEl.className = 'status error';
             }
-            
-            // Switch to text section for calculator
-            if (command === 'calc') {
-                showSection('text');
+        }
+
+        function sendTextCommand() {
+            const text = document.getElementById('textInput').value.trim();
+            if (text) {
+                sendToServer(text);
                 document.getElementById('textInput').value = '';
             }
         }
 
         function useExample(command) {
             document.getElementById('textInput').value = command;
-            processCommand();
+            sendToServer(command);
         }
 
-        // AI Understanding
-        function understandCommand(text) {
-            const lowerText = text.toLowerCase();
-            
-            // Time commands
-            if (lowerText.includes('time') || lowerText.includes('clock') || lowerText.includes('baje')) {
-                return getCurrentTime();
-            }
-            
-            // Date commands
-            if (lowerText.includes('date') || lowerText.includes('today') || lowerText.includes('din')) {
-                return getCurrentDate();
-            }
-            
-            // Weather commands
-            if (lowerText.includes('weather') || lowerText.includes('mausam') || lowerText.includes('temperature')) {
-                return getWeatherInfo();
-            }
-            
-            // Joke commands
-            if (lowerText.includes('joke') || lowerText.includes('funny') || lowerText.includes('haso')) {
-                return getRandomJoke();
-            }
-            
-            // Quote commands
-            if (lowerText.includes('quote') || lowerText.includes('inspiration') || lowerText.includes('motivation')) {
-                return getRandomQuote();
-            }
-            
-            // Greetings
-            if (lowerText.includes('hello') || lowerText.includes('hi') || lowerText.includes('hey') || lowerText.includes('salam')) {
-                return getRandomGreeting();
-            }
-            
-            // Farewells
-            if (lowerText.includes('bye') || lowerText.includes('goodbye') || lowerText.includes('khuda hafiz')) {
-                return getRandomFarewell();
-            }
-            
-            // Help
-            if (lowerText.includes('help') || lowerText.includes('what can you do') || lowerText.includes('capabilities')) {
-                return getCapabilities();
-            }
-            
-            // Math calculations
-            if (/(\d+[\+\-\*\/]\d+)/.test(lowerText)) {
-                return calculateExpression(lowerText);
-            }
-            
-            // Battery
-            if (lowerText.includes('battery') || lowerText.includes('charge')) {
-                return getBatteryStatus();
-            }
-            
-            // Location
-            if (lowerText.includes('location') || lowerText.includes('where am i')) {
-                return getLocationInfo();
-            }
-            
-            // Default response
-            return `I heard: "${text}"\n\nI'm a client-side AI. Try asking about:\n• Time/Date\n• Weather\n• Jokes/Quotes\n• Calculations\n• Battery status\n• Your location`;
-        }
+        async function sendToServer(text) {
+            const responseEl = document.getElementById('response');
+            responseEl.textContent = 'Processing your request...';
 
-        // Response Generators
-        function getCurrentTime() {
-            const now = new Date();
-            return `🕒 Current Time: ${now.toLocaleTimeString()}\n📅 Date: ${now.toLocaleDateString()}`;
-        }
-
-        function getCurrentDate() {
-            const now = new Date();
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            return `📅 Today is: ${now.toLocaleDateString('en-US', options)}`;
-        }
-
-        function getWeatherInfo() {
-            if (navigator.geolocation) {
-                return "🌤️ Weather Information:\nTo get accurate weather, please allow location access.\n\nYou can also check weather apps or websites for real-time data.";
-            } else {
-                return "🌤️ Weather Information:\nLocation not supported in this browser.";
+            // Ensure response section is expanded when processing
+            if (isResponseCollapsed) {
+                toggleResponse();
             }
-        }
 
-        function getRandomJoke() {
-            return `😂 ${aiKnowledge.jokes[Math.floor(Math.random() * aiKnowledge.jokes.length)]}`;
-        }
-
-        function getRandomQuote() {
-            return `💭 ${aiKnowledge.quotes[Math.floor(Math.random() * aiKnowledge.quotes.length)]}`;
-        }
-
-        function getRandomGreeting() {
-            return `${aiKnowledge.greetings[Math.floor(Math.random() * aiKnowledge.greetings.length)]} How can I help you today?`;
-        }
-
-        function getRandomFarewell() {
-            return `${aiKnowledge.farewells[Math.floor(Math.random() * aiKnowledge.farewells.length)]} Have a great day!`;
-        }
-
-        function getCapabilities() {
-            return "🚀 My Capabilities:\n" + aiKnowledge.capabilities.join('\n');
-        }
-
-        function calculateExpression(text) {
             try {
-                // Extract math expression
-                const match = text.match(/(\d+[\+\-\*\/]\d+)/);
-                if (match) {
-                    const expression = match[0];
-                    // Security: Only allow basic math operations
-                    if (/^[\d\+\-\*\/\.]+$/.test(expression)) {
-                        const result = eval(expression);
-                        return `🧮 Calculation: ${expression} = ${result}`;
-                    }
-                }
-                return "❌ Please use simple math like: 2+2, 10*5, 50/2";
-            } catch (e) {
-                return "❌ Could not calculate. Try: 2+2, 10*5, 50/2";
-            }
-        }
-
-        function getBatteryStatus() {
-            if ('getBattery' in navigator || 'battery' in navigator) {
-                return "🔋 Battery API available.\nOn mobile, I can show your battery level if you grant permission.";
-            } else {
-                return "🔋 Battery status not available in this browser.";
-            }
-        }
-
-        function getLocationInfo() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        document.getElementById('response').textContent = 
-                            `📍 Your Location:\nLatitude: ${lat.toFixed(6)}\nLongitude: ${lon.toFixed(6)}\n\nView on map: https://www.google.com/maps?q=${lat},${lon}`;
+                const response = await fetch(`${serverUrl}/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                    (error) => {
-                        document.getElementById('response').textContent = 
-                            `📍 Location Access:\nPlease allow location access to see your coordinates.\n\nYou can also manually check your location in maps.`;
-                    }
-                );
-                return "📍 Getting your location...";
-            } else {
-                return "📍 Location services not available in this browser.";
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    responseEl.textContent = data.response_text;
+                } else {
+                    responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
+                }
+            } catch (error) {
+                responseEl.textContent = 'Connection failed. Please check server settings.';
             }
         }
 
         // Enter key support
         document.getElementById('textInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                processCommand();
+                sendTextCommand();
             }
         });
 
         // Initialize on load
-        window.addEventListener('load', function() {
-            initVoice();
-            console.log("🚀 Duora AI Client-Side Assistant Ready!");
-            console.log("✅ 100% HTTPS Compatible");
-            console.log("✅ Microphone Access Enabled");
-            console.log("✅ GitHub Pages Ready");
-        });
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
