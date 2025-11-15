@@ -3,88 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Assistant</title>
+    <title>Duora AI Assistant</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: #1a1a2e; color: white; padding: 20px; min-height: 100vh; }
-        .container { max-width: 500px; margin: 0 auto; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
         
-        header { text-align: center; margin-bottom: 20px; padding: 20px; background: #2d2d44; border-radius: 10px; }
-        h1 { color: #4cc9f0; margin-bottom: 10px; }
+        body { 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white; 
+            min-height: 100vh;
+            padding: 20px;
+        }
         
-        .card { background: #2d2d44; padding: 20px; margin: 15px 0; border-radius: 10px; }
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+        }
         
-        .server-settings { display: flex; gap: 10px; margin-bottom: 15px; }
-        .server-settings input { flex: 1; padding: 10px; border: none; border-radius: 5px; }
-        .server-settings button { padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px 0;
+        }
         
-        .voice-btn { width: 80px; height: 80px; border-radius: 50%; font-size: 1.5rem; background: #4361ee; color: white; border: none; cursor: pointer; display: block; margin: 10px auto; }
-        .voice-btn.listening { background: #f72585; animation: pulse 1.5s infinite; }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .title {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 5px;
+            color: #4cc9f0;
+        }
+        
+        .subtitle {
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+        
+        /* Navigation */
+        .nav {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            color: #8892b0;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav-btn.active {
+            background: #4361ee;
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        /* Content Sections */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Voice Section */
+        .voice-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+        }
+        
+        .voice-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(67, 97, 238, 0.6);
+        }
+        
+        .voice-btn.listening {
+            background: linear-gradient(135deg, #f72585, #b5179e);
+            animation: pulse 1.5s infinite;
+            transform: scale(1.1);
+        }
         
         @keyframes pulse { 
             0% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(247, 37, 133, 0); }
+            70% { box-shadow: 0 0 0 25px rgba(247, 37, 133, 0); }
             100% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
         }
         
-        .text-input { width: 100%; padding: 15px; border: none; border-radius: 8px; margin: 10px 0; font-size: 16px; }
-        .send-btn { width: 100%; padding: 15px; background: #00b894; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        /* Text Input */
+        .text-input {
+            width: 100%;
+            padding: 18px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            color: white;
+            font-size: 16px;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+        }
         
-        .status { padding: 10px; border-radius: 5px; text-align: center; margin: 10px 0; }
-        .info { background: #4cc9f0; }
-        .success { background: #00b894; }
-        .error { background: #f72585; }
+        .text-input:focus {
+            outline: none;
+            border-color: #4361ee;
+            background: rgba(255, 255, 255, 0.12);
+        }
         
-        .response-box { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; min-height: 100px; margin: 10px 0; }
+        .text-input::placeholder {
+            color: #8892b0;
+        }
         
-        .quick-commands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
-        .quick-btn { padding: 10px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .send-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #00b894, #009975);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 184, 148, 0.4);
+        }
+        
+        /* Status Messages */
+        .status {
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+        
+        .info { 
+            background: rgba(76, 201, 240, 0.2); 
+            color: #4cc9f0;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+        
+        .success { 
+            background: rgba(0, 184, 148, 0.2); 
+            color: #00b894;
+            border: 1px solid rgba(0, 184, 148, 0.3);
+        }
+        
+        .error { 
+            background: rgba(247, 37, 133, 0.2); 
+            color: #f72585;
+            border: 1px solid rgba(247, 37, 133, 0.3);
+        }
+        
+        /* Response Box */
+        .response-box {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            border-radius: 15px;
+            min-height: 120px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        /* Settings */
+        .settings-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .settings-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 350px;
+            height: 100vh;
+            background: #1a1a2e;
+            padding: 30px;
+            transition: right 0.3s ease;
+            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .settings-panel.active {
+            right: 0;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .close-settings {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .server-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            margin: 10px 0;
+        }
+        
+        .test-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            background: #3a56d4;
+        }
+        
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        /* Examples */
+        .examples {
+            margin-top: 20px;
+        }
+        
+        .example-text {
+            color: #8892b0;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .example-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin: 8px 0;
+            border-left: 3px solid #4361ee;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .example-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎮 AI Voice Assistant</h1>
-            <p>Control your computer with voice commands</p>
-        </header>
-
-        <!-- Server Settings -->
+    <!-- Settings Toggle -->
+    <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
+    
+    <!-- Overlay -->
+    <div class="overlay" id="overlay" onclick="toggleSettings()"></div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h3>Settings</h3>
+            <button class="close-settings" onclick="toggleSettings()">✕</button>
+        </div>
+        
         <div class="card">
-            <h3>🔧 Server Settings</h3>
-            <div class="server-settings">
-                <input type="text" id="serverIp" placeholder="192.168.100.11" value="192.168.100.11">
-                <input type="text" id="serverPort" placeholder="8080" value="8080">
-                <button onclick="testConnection()">Test</button>
-            </div>
+            <h4>Server Configuration</h4>
+            <input type="text" class="server-input" id="serverIp" placeholder="IP Address" value="192.168.100.11">
+            <input type="text" class="server-input" id="serverPort" placeholder="Port" value="8080">
+            <button class="test-btn" onclick="testConnection()">Test Connection</button>
             <div id="connectionStatus" class="status info">Click Test to check connection</div>
         </div>
-
-        <!-- Voice Control -->
+        
         <div class="card">
-            <h3>🎤 Voice Command</h3>
-            <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
-            <div id="voiceStatus" class="status info">Tap microphone to speak</div>
+            <h4>Voice Examples</h4>
+            <div class="example-item" onclick="useExample('Open notepad')">"Open notepad"</div>
+            <div class="example-item" onclick="useExample('What time is it')">"What time is it"</div>
+            <div class="example-item" onclick="useExample('Play music on youtube')">"Play music on YouTube"</div>
+            <div class="example-item" onclick="useExample('Shutdown computer')">"Shutdown computer"</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🤖</div>
+            <h1 class="title">Duora AI</h1>
+            <p class="subtitle">Your intelligent voice assistant</p>
         </div>
 
-        <!-- Text Control -->
-        <div class="card">
-            <h3>⌨️ Text Command</h3>
-            <input type="text" class="text-input" id="textInput" placeholder="Type command here...">
-            <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
-            
-            <div class="quick-commands">
-                <button class="quick-btn" onclick="sendQuickCommand('open notepad')">📝 Notepad</button>
-                <button class="quick-btn" onclick="sendQuickCommand('open calculator')">🧮 Calculator</button>
-                <button class="quick-btn" onclick="sendQuickCommand('what time is it')">🕒 Time</button>
-                <button class="quick-btn" onclick="sendQuickCommand('open chrome')">🌐 Chrome</button>
+        <!-- Navigation -->
+        <div class="nav">
+            <button class="nav-btn active" onclick="showSection('voice')">🎤 Voice</button>
+            <button class="nav-btn" onclick="showSection('text')">⌨️ Text</button>
+        </div>
+
+        <!-- Voice Section -->
+        <div id="voiceSection" class="content-section active">
+            <div class="card">
+                <h3>Voice Command</h3>
+                <p class="subtitle">Click the microphone and speak your command</p>
+                
+                <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
+                <div id="voiceStatus" class="status info">Ready to listen</div>
+                
+                <div class="examples">
+                    <div class="example-text">Try saying:</div>
+                    <div class="example-item" onclick="useExample('Open calculator')">"Open calculator"</div>
+                    <div class="example-item" onclick="useExample('Tell me about AI')">"Tell me about AI"</div>
+                </div>
             </div>
         </div>
 
-        <!-- Response -->
+        <!-- Text Section -->
+        <div id="textSection" class="content-section">
+            <div class="card">
+                <h3>Text Command</h3>
+                <p class="subtitle">Type your command below</p>
+                
+                <input type="text" class="text-input" id="textInput" placeholder="Type your command here...">
+                <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
+                
+                <div class="examples">
+                    <div class="example-text">Quick commands:</div>
+                    <div class="example-item" onclick="useExample('Open chrome browser')">"Open chrome browser"</div>
+                    <div class="example-item" onclick="useExample('Lock my computer')">"Lock my computer"</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Section -->
         <div class="card">
-            <h3>🤖 AI Response</h3>
+            <h3>AI Response</h3>
             <div id="response" class="response-box">
-                Response will appear here...
+                Welcome to Duora AI! Choose voice or text to get started.
             </div>
         </div>
     </div>
@@ -94,9 +438,27 @@
         let recognition = null;
         let serverUrl = 'http://192.168.100.11:8080';
 
-        // Initialize
+        // Navigation
+        function showSection(section) {
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show selected section
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(section + 'Section').classList.add('active');
+        }
+
+        // Settings
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('overlay');
+            panel.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Voice Recognition
         function init() {
-            // Check if browser supports speech recognition
             if ('webkitSpeechRecognition' in window) {
                 recognition = new webkitSpeechRecognition();
                 recognition.continuous = false;
@@ -111,7 +473,6 @@
 
                 recognition.onresult = function(event) {
                     const text = event.results[0][0].transcript;
-                    document.getElementById('textInput').value = text;
                     updateVoiceStatus('✅ Voice captured!');
                     sendToServer(text);
                 };
@@ -129,7 +490,6 @@
             }
         }
 
-        // Voice control
         function toggleVoice() {
             if (isListening) {
                 stopListening();
@@ -149,7 +509,7 @@
         function stopListening() {
             isListening = false;
             document.getElementById('voiceButton').classList.remove('listening');
-            updateVoiceStatus('Tap microphone to speak');
+            updateVoiceStatus('Click microphone to speak');
             if (recognition) {
                 recognition.stop();
             }
@@ -159,7 +519,7 @@
             document.getElementById('voiceStatus').textContent = message;
         }
 
-        // Server communication
+        // Server Communication
         function getServerUrl() {
             const ip = document.getElementById('serverIp').value;
             const port = document.getElementById('serverPort').value;
@@ -172,8 +532,8 @@
             statusEl.className = 'status info';
 
             try {
-                const response = await fetch(`${getServerUrl()}/health`, { timeout: 5000 });
-                if (response.status === 200) {
+                const response = await fetch(`${getServerUrl()}/health`);
+                if (response.ok) {
                     statusEl.textContent = '✅ Connected to server!';
                     statusEl.className = 'status success';
                     serverUrl = getServerUrl();
@@ -195,14 +555,14 @@
             }
         }
 
-        function sendQuickCommand(command) {
+        function useExample(command) {
             document.getElementById('textInput').value = command;
             sendToServer(command);
         }
 
         async function sendToServer(text) {
             const responseEl = document.getElementById('response');
-            responseEl.textContent = 'Sending to server...';
+            responseEl.textContent = 'Processing your request...';
 
             try {
                 const response = await fetch(`${serverUrl}/process`, {
@@ -221,7 +581,7 @@
                     responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
                 }
             } catch (error) {
-                responseEl.textContent = 'Connection failed: ' + error.message;
+                responseEl.textContent = 'Connection failed. Please check server settings.';
             }
         }
 
