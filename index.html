@@ -31,9 +31,25 @@
             padding: 25px 0;
         }
         
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .logo-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #4cc9f0;
+        }
+        
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: bold;
             background: linear-gradient(45deg, #4cc9f0, #4361ee);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -207,12 +223,47 @@
             border: 1px solid rgba(247, 37, 133, 0.3);
         }
         
-        /* Response Box */
+        /* Response Section */
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .response-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .response-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        
+        .response-content {
+            max-height: 300px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+        
+        .response-content.collapsed {
+            max-height: 0;
+            overflow: hidden;
+        }
+        
         .response-box {
             background: rgba(255, 255, 255, 0.08);
             padding: 20px;
             border-radius: 15px;
-            min-height: 120px;
             margin: 15px 0;
             border: 1px solid rgba(255, 255, 255, 0.1);
             line-height: 1.6;
@@ -318,30 +369,9 @@
             display: block;
         }
         
-        /* Examples */
+        /* Hidden Examples */
         .examples {
-            margin-top: 20px;
-        }
-        
-        .example-text {
-            color: #8892b0;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-        }
-        
-        .example-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px 15px;
-            border-radius: 10px;
-            margin: 8px 0;
-            border-left: 3px solid #4361ee;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .example-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(5px);
+            display: none;
         }
     </style>
 </head>
@@ -377,10 +407,13 @@
     </div>
 
     <div class="container">
-        <!-- Header -->
+        <!-- Header with Logo -->
         <div class="header">
-            <div class="logo">🤖</div>
-            <h1 class="title">Duora AI</h1>
+            <div class="logo-container">
+                <img src="image.png" alt="Duora Logo" class="logo-img" onerror="this.style.display='none'">
+                <div class="logo-text">Duora</div>
+            </div>
+            <h1 class="title">AI Assistant</h1>
             <p class="subtitle">Your intelligent voice assistant</p>
         </div>
 
@@ -396,14 +429,10 @@
                 <h3>Voice Command</h3>
                 <p class="subtitle">Click the microphone and speak your command</p>
                 
-                <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
+                <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">
+                    <img src="image.png" alt="Mic" style="width: 40px; height: 40px;" onerror="this.parentElement.innerHTML='🎤'">
+                </button>
                 <div id="voiceStatus" class="status info">Ready to listen</div>
-                
-                <div class="examples">
-                    <div class="example-text">Try saying:</div>
-                    <div class="example-item" onclick="useExample('Open calculator')">"Open calculator"</div>
-                    <div class="example-item" onclick="useExample('Tell me about AI')">"Tell me about AI"</div>
-                </div>
             </div>
         </div>
 
@@ -415,20 +444,22 @@
                 
                 <input type="text" class="text-input" id="textInput" placeholder="Type your command here...">
                 <button class="send-btn" onclick="sendTextCommand()">Send Command</button>
-                
-                <div class="examples">
-                    <div class="example-text">Quick commands:</div>
-                    <div class="example-item" onclick="useExample('Open chrome browser')">"Open chrome browser"</div>
-                    <div class="example-item" onclick="useExample('Lock my computer')">"Lock my computer"</div>
-                </div>
             </div>
         </div>
 
         <!-- Response Section -->
         <div class="card">
-            <h3>AI Response</h3>
-            <div id="response" class="response-box">
-                Welcome to Duora AI! Choose voice or text to get started.
+            <div class="response-header" id="responseHeader" onclick="toggleResponse()">
+                <div class="response-title">
+                    <img src="image.png" alt="AI" style="width: 24px; height: 24px;" onerror="this.style.display='none'">
+                    AI Response
+                </div>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="response-content" id="responseContent">
+                <div id="response" class="response-box">
+                    Welcome to Duora AI! Choose voice or text to get started.
+                </div>
             </div>
         </div>
     </div>
@@ -437,6 +468,7 @@
         let isListening = false;
         let recognition = null;
         let serverUrl = 'http://192.168.100.11:8080';
+        let isResponseCollapsed = false;
 
         // Navigation
         function showSection(section) {
@@ -447,6 +479,22 @@
             // Show selected section
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
             document.getElementById(section + 'Section').classList.add('active');
+        }
+
+        // Response Toggle
+        function toggleResponse() {
+            const header = document.getElementById('responseHeader');
+            const content = document.getElementById('responseContent');
+            
+            isResponseCollapsed = !isResponseCollapsed;
+            
+            if (isResponseCollapsed) {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+            } else {
+                header.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+            }
         }
 
         // Settings
@@ -563,6 +611,11 @@
         async function sendToServer(text) {
             const responseEl = document.getElementById('response');
             responseEl.textContent = 'Processing your request...';
+
+            // Ensure response section is expanded when processing
+            if (isResponseCollapsed) {
+                toggleResponse();
+            }
 
             try {
                 const response = await fetch(`${serverUrl}/process`, {
