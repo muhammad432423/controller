@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uora AI Assistant</title>
+    <title>Duora AI Assistant</title>
     <style>
         * { 
             margin: 0; 
@@ -368,6 +368,19 @@
         .overlay.active {
             display: block;
         }
+        
+        .example-item {
+            padding: 10px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .example-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -405,8 +418,8 @@
         <!-- Header with Logo -->
         <div class="header">
             <div class="logo-container">
-                <img src="image.png" alt="Uora Logo" class="logo-img" onerror="this.style.display='none'">
-                <div class="logo-text">Uora</div>
+                <img src="image.png" alt="Duora Logo" class="logo-img" onerror="this.style.display='none'">
+                <div class="logo-text">Duora</div>
             </div>
             <h1 class="title">AI Assistant</h1>
             <p class="subtitle">Your intelligent voice assistant</p>
@@ -422,10 +435,11 @@
         <div id="voiceSection" class="content-section active">
             <div class="card">
                 <h3>Voice Command</h3>
-                <p class="subtitle">Click the microphone and speak your command</p>
+                <p class="subtitle">Click the microphone to start/stop listening</p>
                 
                 <button class="voice-btn" id="voiceButton" onclick="toggleVoice()">🎤</button>
                 <div id="voiceStatus" class="status info">Ready to listen</div>
+                <div id="transcript" class="status info" style="display: none;"></div>
             </div>
         </div>
 
@@ -450,7 +464,7 @@
             </div>
             <div class="response-content collapsed" id="responseContent">
                 <div id="response" class="response-box">
-                    Welcome to Uora AI! Choose voice or text to get started.
+                    Welcome to Duora AI! Choose voice or text to get started.
                 </div>
             </div>
         </div>
@@ -499,31 +513,60 @@
 
         // Voice Recognition
         function init() {
-            if ('webkitSpeechRecognition' in window) {
-                recognition = new webkitSpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true; // Keep listening continuously
+                recognition.interimResults = true; // Get interim results
                 recognition.lang = 'en-US';
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
-                    updateVoiceStatus('🎤 Listening... Speak now');
+                    updateVoiceStatus('🎤 Listening continuously... Speak now');
+                    document.getElementById('transcript').style.display = 'block';
                 };
 
                 recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    updateVoiceStatus('✅ Voice captured!');
-                    sendToServer(text);
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    // Update transcript display
+                    document.getElementById('transcript').textContent = 
+                        'Heard: ' + (finalTranscript || interimTranscript);
+                    
+                    // Process final results
+                    if (finalTranscript) {
+                        updateVoiceStatus('✅ Processing command...');
+                        sendToServer(finalTranscript);
+                    }
                 };
 
                 recognition.onerror = function(event) {
                     updateVoiceStatus('❌ Error: ' + event.error);
+                    if (event.error === 'no-speech') {
+                        // Don't stop on no-speech errors in continuous mode
+                        return;
+                    }
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    stopListening();
+                    // Auto-restart if we're still supposed to be listening
+                    if (isListening) {
+                        recognition.start();
+                    } else {
+                        stopListening();
+                    }
                 };
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
@@ -549,7 +592,8 @@
         function stopListening() {
             isListening = false;
             document.getElementById('voiceButton').classList.remove('listening');
-            updateVoiceStatus('Click microphone to speak');
+            updateVoiceStatus('Click microphone to start listening');
+            document.getElementById('transcript').style.display = 'none';
             if (recognition) {
                 recognition.stop();
             }
