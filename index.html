@@ -381,6 +381,15 @@
         .example-item:hover {
             background: rgba(255, 255, 255, 0.15);
         }
+        
+        .debug-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #8892b0;
+        }
     </style>
 </head>
 <body>
@@ -403,6 +412,18 @@
             <input type="text" class="server-input" id="serverPort" placeholder="Port" value="8080">
             <button class="test-btn" onclick="testConnection()">Test Connection</button>
             <div id="connectionStatus" class="status info">Click Test to check connection</div>
+            <div class="debug-info" id="debugInfo"></div>
+        </div>
+        
+        <div class="card">
+            <h4>Network Help</h4>
+            <p style="font-size: 0.9rem; margin-bottom: 10px; color: #8892b0;">
+                <strong>Mobile Connection Issues:</strong><br>
+                1. Ensure PC and mobile are on same WiFi<br>
+                2. Check firewall settings on PC<br>
+                3. Try using PC's IP address instead of localhost<br>
+                4. Mobile may need http:// (not https://)
+            </p>
         </div>
         
         <div class="card">
@@ -474,15 +495,13 @@
         let isListening = false;
         let recognition = null;
         let serverUrl = 'http://192.168.100.11:8080';
-        let isResponseCollapsed = true; // Start collapsed
+        let isResponseCollapsed = true;
 
         // Navigation
         function showSection(section) {
-            // Update navigation buttons
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
-            // Show selected section
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
             document.getElementById(section + 'Section').classList.add('active');
         }
@@ -516,8 +535,8 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true; // Keep listening continuously
-                recognition.interimResults = true; // Get interim results
+                recognition.continuous = true;
+                recognition.interimResults = true;
                 recognition.lang = 'en-US';
 
                 recognition.onstart = function() {
@@ -540,11 +559,9 @@
                         }
                     }
                     
-                    // Update transcript display
                     document.getElementById('transcript').textContent = 
                         'Heard: ' + (finalTranscript || interimTranscript);
                     
-                    // Process final results
                     if (finalTranscript) {
                         updateVoiceStatus('✅ Processing command...');
                         sendToServer(finalTranscript);
@@ -554,16 +571,16 @@
                 recognition.onerror = function(event) {
                     updateVoiceStatus('❌ Error: ' + event.error);
                     if (event.error === 'no-speech') {
-                        // Don't stop on no-speech errors in continuous mode
                         return;
                     }
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    // Auto-restart if we're still supposed to be listening
                     if (isListening) {
-                        recognition.start();
+                        setTimeout(() => {
+                            if (isListening) recognition.start();
+                        }, 100);
                     } else {
                         stopListening();
                     }
@@ -583,7 +600,14 @@
 
         function startListening() {
             if (recognition) {
-                recognition.start();
+                try {
+                    recognition.start();
+                } catch (e) {
+                    // If already started, ignore the error
+                    if (!e.message.includes('already started')) {
+                        updateVoiceStatus('❌ Error starting voice recognition');
+                    }
+                }
             } else {
                 updateVoiceStatus('❌ Voice recognition not available');
             }
@@ -603,7 +627,7 @@
             document.getElementById('voiceStatus').textContent = message;
         }
 
-        // Server Communication
+        // Server Communication with CORS handling
         function getServerUrl() {
             const ip = document.getElementById('serverIp').value;
             const port = document.getElementById('serverPort').value;
@@ -612,22 +636,59 @@
 
         async function testConnection() {
             const statusEl = document.getElementById('connectionStatus');
+            const debugEl = document.getElementById('debugInfo');
+            const serverUrl = getServerUrl();
+            
             statusEl.textContent = 'Testing connection...';
             statusEl.className = 'status info';
+            debugEl.textContent = `Trying to connect to: ${serverUrl}`;
 
             try {
-                const response = await fetch(`${getServerUrl()}/health`);
-                if (response.ok) {
+                // Try multiple endpoints
+                const endpoints = ['/health', '/', '/status'];
+                let connected = false;
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`${serverUrl}${endpoint}`, {
+                            method: 'GET',
+                            mode: 'cors',
+                            headers: {
+                                'Accept': 'application/json',
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            connected = true;
+                            break;
+                        }
+                    } catch (e) {
+                        // Continue to next endpoint
+                        continue;
+                    }
+                }
+
+                if (connected) {
                     statusEl.textContent = '✅ Connected to server!';
                     statusEl.className = 'status success';
                     serverUrl = getServerUrl();
+                    debugEl.textContent += '\n✅ Connection successful!';
                 } else {
-                    statusEl.textContent = '❌ Server error';
+                    statusEl.textContent = '❌ Server not responding';
                     statusEl.className = 'status error';
+                    debugEl.textContent += '\n❌ All endpoints failed';
                 }
             } catch (error) {
                 statusEl.textContent = '❌ Cannot connect to server';
                 statusEl.className = 'status error';
+                debugEl.textContent += `\n❌ Error: ${error.message}`;
+                
+                // Additional debug info
+                debugEl.textContent += `\n\nTroubleshooting tips:
+• Ensure server is running on ${serverUrl}
+• Check if PC firewall allows connections
+• Verify mobile and PC are on same network
+• Try disabling mobile data (use WiFi only)`;
             }
         }
 
@@ -648,19 +709,25 @@
             const responseEl = document.getElementById('response');
             responseEl.textContent = 'Processing your request...';
 
-            // Ensure response section is expanded when processing
             if (isResponseCollapsed) {
                 toggleResponse();
             }
 
             try {
+                const serverUrl = getServerUrl();
                 const response = await fetch(`${serverUrl}/process`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({ text: text })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
 
                 const data = await response.json();
                 
@@ -670,7 +737,12 @@
                     responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
                 }
             } catch (error) {
-                responseEl.textContent = 'Connection failed. Please check server settings.';
+                console.error('Request failed:', error);
+                responseEl.textContent = `Connection failed: ${error.message}\n\nPlease check:
+• Server is running
+• Correct IP and port in settings
+• Both devices on same network
+• Firewall allows connections`;
             }
         }
 
