@@ -474,7 +474,10 @@
         let isListening = false;
         let recognition = null;
         let serverUrl = 'http://192.168.100.11:8080';
-        let isResponseCollapsed = true; // Start collapsed
+        let isResponseCollapsed = true;
+        let lastProcessedCommand = ''; // Track last command to prevent duplicates
+        let commandCooldown = 3000; // 3 second cooldown between commands
+        let lastCommandTime = 0;
 
         // Navigation
         function showSection(section) {
@@ -511,66 +514,75 @@
             overlay.classList.toggle('active');
         }
 
-        // Voice Recognition
+        // Voice Recognition - FIXED VERSION
         function init() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true; // Keep listening continuously
-                recognition.interimResults = true; // Get interim results
+                recognition.continuous = false; // Changed to false - single utterance
+                recognition.interimResults = false; // Changed to false - only final results
                 recognition.lang = 'en-US';
+                recognition.maxAlternatives = 1;
 
                 recognition.onstart = function() {
                     isListening = true;
                     document.getElementById('voiceButton').classList.add('listening');
-                    updateVoiceStatus('🎤 Listening continuously... Speak now');
+                    updateVoiceStatus('🎤 Listening... Speak now');
                     document.getElementById('transcript').style.display = 'block';
                 };
 
                 recognition.onresult = function(event) {
-                    let finalTranscript = '';
-                    let interimTranscript = '';
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                        const transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript;
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
+                    const transcript = event.results[0][0].transcript.trim();
+                    console.log('Voice recognized:', transcript);
                     
                     // Update transcript display
-                    document.getElementById('transcript').textContent = 
-                        'Heard: ' + (finalTranscript || interimTranscript);
+                    document.getElementById('transcript').textContent = 'Heard: ' + transcript;
                     
-                    // Process final results
-                    if (finalTranscript) {
-                        updateVoiceStatus('✅ Processing command...');
-                        sendToServer(finalTranscript);
-                    }
+                    // Process the command with duplicate prevention
+                    processVoiceCommand(transcript);
                 };
 
                 recognition.onerror = function(event) {
-                    updateVoiceStatus('❌ Error: ' + event.error);
+                    console.log('Speech recognition error:', event.error);
                     if (event.error === 'no-speech') {
-                        // Don't stop on no-speech errors in continuous mode
-                        return;
+                        updateVoiceStatus('❌ No speech detected');
+                    } else if (event.error === 'audio-capture') {
+                        updateVoiceStatus('❌ No microphone found');
+                    } else if (event.error === 'not-allowed') {
+                        updateVoiceStatus('❌ Microphone permission denied');
+                    } else {
+                        updateVoiceStatus('❌ Error: ' + event.error);
                     }
                     stopListening();
                 };
 
                 recognition.onend = function() {
-                    // Auto-restart if we're still supposed to be listening
-                    if (isListening) {
-                        recognition.start();
-                    } else {
-                        stopListening();
-                    }
+                    console.log('Speech recognition ended');
+                    // Don't auto-restart - wait for user to click again
+                    stopListening();
                 };
             } else {
                 updateVoiceStatus('❌ Voice not supported in this browser');
             }
+        }
+
+        function processVoiceCommand(transcript) {
+            const currentTime = Date.now();
+            
+            // Prevent duplicate commands within cooldown period
+            if (currentTime - lastCommandTime < commandCooldown && 
+                transcript.toLowerCase() === lastProcessedCommand.toLowerCase()) {
+                console.log('Duplicate command ignored:', transcript);
+                updateVoiceStatus('⚠️ Duplicate command ignored');
+                return;
+            }
+            
+            // Update tracking variables
+            lastProcessedCommand = transcript;
+            lastCommandTime = currentTime;
+            
+            updateVoiceStatus('✅ Processing command...');
+            sendToServer(transcript);
         }
 
         function toggleVoice() {
@@ -583,7 +595,16 @@
 
         function startListening() {
             if (recognition) {
-                recognition.start();
+                // Reset transcript
+                document.getElementById('transcript').textContent = 'Heard: ...';
+                document.getElementById('transcript').style.display = 'block';
+                
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.log('Error starting recognition:', error);
+                    updateVoiceStatus('❌ Error starting voice recognition');
+                }
             } else {
                 updateVoiceStatus('❌ Voice recognition not available');
             }
@@ -593,9 +614,13 @@
             isListening = false;
             document.getElementById('voiceButton').classList.remove('listening');
             updateVoiceStatus('Click microphone to start listening');
-            document.getElementById('transcript').style.display = 'none';
+            
             if (recognition) {
-                recognition.stop();
+                try {
+                    recognition.stop();
+                } catch (error) {
+                    console.log('Error stopping recognition:', error);
+                }
             }
         }
 
@@ -654,6 +679,7 @@
             }
 
             try {
+                console.log('Sending to server:', text);
                 const response = await fetch(`${serverUrl}/process`, {
                     method: 'POST',
                     headers: {
@@ -663,13 +689,21 @@
                 });
 
                 const data = await response.json();
+                console.log('Server response:', data);
                 
                 if (data.success) {
                     responseEl.textContent = data.response_text;
+                    // Auto-collapse after successful response
+                    setTimeout(() => {
+                        if (!isResponseCollapsed) {
+                            toggleResponse();
+                        }
+                    }, 5000);
                 } else {
                     responseEl.textContent = 'Error: ' + (data.error || 'Unknown error');
                 }
             } catch (error) {
+                console.error('Connection error:', error);
                 responseEl.textContent = 'Connection failed. Please check server settings.';
             }
         }
